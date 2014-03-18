@@ -2,12 +2,12 @@ import datetime
 from anyjson import loads, dumps
 
 def __zson_encode(obj):
-    if isinstance(obj, (str, unicode, int, float, bool, None.__type__)):
-        return dumps(self, obj)
-    elif isinstance(obj, list):
-        return map(lambda x: zson_encode(x), obj)
+    if isinstance(obj, (str, int, float, bool, None.__class__)):
+        return dumps(obj)
+    elif isinstance(obj, (list, tuple, set)):
+        return dumps(list(map(lambda x: __zson_encode(x), obj)))
     elif isinstance(obj, dict):
-	return dict([(zson_encode(k), zson_encode(v)) for k,v in obj.iteritems()])
+        return dumps(dict([(__zson_encode(k), __zson_encode(v)) for k,v in obj.items()]))
     elif isinstance(obj, datetime.datetime):
         return dumps({
             "__zson_class_name":"datetime",
@@ -29,8 +29,8 @@ def __zson_encode(obj):
         raise Exception("unable to encode object %s to json" % repr(obj))
 
 def __zson_decode(str_):
-    if isinstance(obj, bytes_t):
-        str_ = str_.decode()
+    #if isinstance(str_, bytes_t):
+    #    str_ = str_.decode()
     temp = loads(str_)
     if isinstance(temp, dict) and "__zson_class_name" in temp:
         if temp["__zson_class_name"] == "datetime":
@@ -59,4 +59,4 @@ def __zson_decode(str_):
         return temp
 
 
-zson_registration_args = (__zson_decode, __zson_encode, 'application/json', 'utf-8')
+zson_registration_args = (__zson_encode, __zson_decode, 'application/json', 'utf-8')
