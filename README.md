@@ -6,7 +6,8 @@ Install the egg as you would any other egg.
 
 ```
 pip install zson
-``` or
+```
+or
 
 ```
 easy_install zson
