@@ -34,3 +34,20 @@ class MyObject(object):
 ```
 
 ## Celery Usage
+
+Zson was originally written to allow objects to be passed in Celery. If you want to use zson as your serializer in Celery, you can set this by creating a configuration file and adding
+
+```
+CELERY_TASK_SERIALIZER = 'zson'
+CELERY_RESULT_SERIALIZER = 'zson'
+CELERY_ACCEPT_CONTENT = ["zson"]
+```
+
+and then loading this configuration file when you configure your Celery app:
+
+```python
+c = celery.Celery('zsearch', backend='amqp', broker='amqp://')
+c.config_from_object('celeryconfig')
+```
+
+
