@@ -4,7 +4,7 @@ from anyjson import loads, dumps
 
 def zson_encode(obj):
     def __inner_encode(obj):
-        if isinstance(obj, (str, int, float, bool, dict, None.__class__)):
+        if isinstance(obj, (str, int, float, bool, None.__class__)):
             return obj
         elif isinstance(obj, datetime.datetime):
             return {
@@ -33,37 +33,43 @@ def zson_encode(obj):
     return dumps(__inner_encode(obj))
    
 def zson_decode(str_):
-    #if isinstance(str_, bytes_t):
-    #    str_ = str_.decode()
-    temp = loads(str_)
-    if isinstance(temp, dict) and "__zson_class_name" in temp:
-        if temp["__zson_class_name"] == "datetime":
-            return datetime.datetime(
-                    temp["year"],
-                    temp["month"],
-                    temp["day"],
-                    temp["hour"],
-                    temp["minute"],
-                    temp["second"],
-                    temp["microsecond"]
-            )
-        else:
-            for klass in object.__subclasses__():
-                 if klass.__name__ == temp["__zson_class_name"]:
-                     candidate = klass
-                     break
+    def __inner_decode(temp):
+        if isinstance(temp, (list, tuple, set)):
+            return list(map(lambda x: __inner_decode(x), temp))
+        elif isinstance(temp, dict) and "__zson_class_name" in temp:
+            if temp["__zson_class_name"] == "datetime":
+                return datetime.datetime(
+                        temp["year"],
+                        temp["month"],
+                        temp["day"],
+                        temp["hour"],
+                        temp["minute"],
+                        temp["second"],
+                        temp["microsecond"]
+                )
             else:
-                raise Exception("Unknown class <%s> defined in zson object" % temp["__zson_class_name"])
-            if not hasattr(candidate, "from_json"):
-                raise Exception("%s does not implement from_json" % candidates[0].__name__)
-            else:
-                del temp["__zson_class_name"]
-                return candidate.from_json(temp)
-    else:
-        return temp
+                for klass in object.__subclasses__():
+                     if klass.__name__ == temp["__zson_class_name"]:
+                         candidate = klass
+                         break
+                else:
+                    raise Exception("Unknown class <%s> defined in zson object" % temp["__zson_class_name"])
+                if not hasattr(candidate, "from_json"):
+                    raise Exception("%s does not implement from_json" % candidates[0].__name__)
+                else:
+                    del temp["__zson_class_name"]
+                    return candidate.from_json(temp)
+        elif isinstance(temp, dict):
+            return dict([(k, __inner_decode(v)) for k,v in temp.items()])
+        else: 
+            return temp
+
+    return __inner_decode(loads(str_))
 
 
 zson_registration_args = (zson_encode, zson_decode, 'application/zson', 'utf-8')
+
+
 
 class ZsonTestCase(unittest.TestCase):
     def testString(self):
@@ -96,22 +102,46 @@ class ZsonTestCase(unittest.TestCase):
         self.assertEqual(v, loads(dumps(v)))
         self.assertEqual(v, zson_decode(zson_encode(v)))
 
+    class Foo(object):
+        def __init__(self, name):
+            self.name = name
+
+        def to_json(self): 
+            return dict(name=self.name)
+
+        @classmethod
+        def from_json(cls, v):
+            return cls(v["name"])
+
+        def __eq__(self, other): 
+            return self.__class__ == other.__class__ \
+                    and self.name == other.name
+ 
     def testObject(self):
-        class Foo(object):
-            def __init__(self, name):
-                self.name = name
+        v = self.Foo("test123")
+        self.assertEqual(v, zson_decode(zson_encode(v)))
 
-            def to_json(self): 
-                return dict(name=self.name)
+    def testListObject(self):
+        v = [self.Foo("test123"), self.Foo("asdf")]
+        self.assertEqual(v, zson_decode(zson_encode(v)))
 
-            @classmethod
-            def from_json(cls, v):
-                return cls(v["name"])
+    def testDictObject(self):
+        v = {"a":self.Foo("test123"), "b":self.Foo("asdf")}
+        self.assertEqual(v, zson_decode(zson_encode(v)))
 
-            def __eq__(self, other): 
-                return self.name == other.name
-
-        v = Foo("test123")
+    def testCeleryRealistic(self):
+        # taken from celery except tuples converted into lists
+        # given that this happens according to default python
+        # JSON behavior
+        v = {
+            'expires': None, 'utc': True,
+            'args': [self.Foo("asdf"),self.Foo("abcd")],
+            'chord': None, 'callbacks': None, 'errbacks': None,
+            'taskset': None, 'id': 'd04caa97-4a5e-43e8-88cc-9f8e6c3ce4af',
+            'retries': 0, 'task': 'get-system-information',
+            'timelimit': [None, None], 'eta': None,
+            'kwargs': {"a":self.Foo("test123"), "b":self.Foo("asdf")}
+        }
         self.assertEqual(v, zson_decode(zson_encode(v)))
 
 
