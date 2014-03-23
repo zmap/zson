@@ -63,8 +63,12 @@ def zson_decode(str_):
             return dict([(k, __inner_decode(v)) for k,v in temp.items()])
         else: 
             return temp
-
-    return __inner_decode(loads(str_))
+    if str_ == "None":
+        return None
+    elif isinstance(str_, dict):
+        return __inner_decode(str_)
+    else:
+        return __inner_decode(loads(str_))
 
 
 zson_registration_args = (zson_encode, zson_decode, 'application/zson', 'utf-8')
