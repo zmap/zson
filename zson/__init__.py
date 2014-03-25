@@ -59,7 +59,7 @@ def zson_decode(str_):
                                 yield klass2
                     yield kls   
 	                          
-                for klass in ter_classes(object):
+                for klass in iter_classes(object):
                      if klass.__name__ == temp["__zson_class_name"]:
                          candidate = klass
                          break
