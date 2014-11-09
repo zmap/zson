@@ -20,7 +20,7 @@ setup(
 	'kombu.serializers': [
             'zson = zson:zson_registration_args'
         ]
-    }
+    },
     install_requires = [
         "anyjson"
     ]
