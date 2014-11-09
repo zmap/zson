@@ -48,7 +48,18 @@ def zson_decode(str_):
                         temp["microsecond"]
                 )
             else:
-                for klass in object.__subclasses__():
+                def iter_classes(kls):
+                    try:
+                        for klass in kls.__subclasses__():
+                            for klass2 in iter_classes(klass):
+                                yield klass2
+                    except Exception, e: #fml
+                        for klass in kls.__subclasses__(kls):
+                            for klass2 in iter_classes(klass):
+                                yield klass2
+                    yield kls   
+	                          
+                for klass in iter_classes(object):
                      if klass.__name__ == temp["__zson_class_name"]:
                          candidate = klass
                          break
@@ -63,8 +74,12 @@ def zson_decode(str_):
             return dict([(k, __inner_decode(v)) for k,v in temp.items()])
         else: 
             return temp
-
-    return __inner_decode(loads(str_))
+    if str_ == "None":
+        return None
+    elif isinstance(str_, dict):
+        return __inner_decode(str_)
+    else:
+        return __inner_decode(loads(str_))
 
 
 zson_registration_args = (zson_encode, zson_decode, 'application/zson', 'utf-8')

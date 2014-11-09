@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name = "zson",
     description = "A JSON serializer for Kombu (and therefore also Celery) that supports encoding objects by defining to_json and from_json methods.",
-    version = "1.0.14",
+    version = "1.0.16",
     license = "Apache License, Version 2.0",
     author = "Zakir Durumeric",
     author_email = "zakird@gmail.com",
