@@ -25,6 +25,10 @@ def zson_encode(obj, raw=False):
             return dict([(__inner_encode(k), __inner_encode(v)) for k,v in obj.items()])
         elif hasattr(obj, "to_json"):
             d = obj.to_json()
+            if d is None and raw:
+                return d
+            elif d is None:
+                d = dict()
             if "__zson_class_name" in d:
                  raise Exception("Object is not allowed to define __zson_class_name in to_json")
             if not raw:
@@ -156,6 +160,11 @@ class ZsonTestCase(unittest.TestCase):
 
         v = IsAClass()
         self.assertEqual(json.dumps(x), zson_encode(v, raw=True))
+        class EdgeCase(object):
+            def to_json(self):
+                return None
+        z = EdgeCase()
+        self.assertEqual('null', zson_encode(z, raw=True))
 
     def testCeleryRealistic(self):
         # taken from celery except tuples converted into lists
