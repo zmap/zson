@@ -1,14 +1,14 @@
 import unittest
 import datetime
 from anyjson import loads, dumps
+import json
 
-def zson_encode(obj):
+def zson_encode(obj, raw=False):
     def __inner_encode(obj):
         if isinstance(obj, (str, int, float, bool, None.__class__)):
             return obj
         elif isinstance(obj, datetime.datetime):
-            return {
-                "__zson_class_name":"datetime",
+            out = {
                 "year":obj.year,
                 "month":obj.month,
                 "day":obj.day,
@@ -17,6 +17,8 @@ def zson_encode(obj):
                 "second":obj.second,
                 "microsecond":obj.microsecond
             }
+            if not raw:
+                out["__zson_class_name"] = "datetime"
         elif isinstance(obj, (list, tuple, set)):
             return list(map(lambda x: __inner_encode(x), obj))
         elif isinstance(obj, dict):
@@ -25,7 +27,8 @@ def zson_encode(obj):
             d = obj.to_json()
             if "__zson_class_name" in d:
                  raise Exception("Object is not allowed to define __zson_class_name in to_json")
-            d["__zson_class_name"] = obj.__class__.__name__
+            if not raw:
+                 d["__zson_class_name"] = obj.__class__.__name__
             return d
         else:
             raise Exception("unable to encode object %s to json" % repr(obj))
@@ -143,6 +146,16 @@ class ZsonTestCase(unittest.TestCase):
     def testDictObject(self):
         v = {"a":self.Foo("test123"), "b":self.Foo("asdf")}
         self.assertEqual(v, zson_decode(zson_encode(v)))
+
+    def testRawEncode(self):
+        x = {'a':1, 'b':2, 'c': "x"}
+        class IsAClass(object):
+
+            def to_json(self):
+                return x
+
+        v = IsAClass()
+        self.assertEqual(json.dumps(x), zson_encode(v, raw=True))
 
     def testCeleryRealistic(self):
         # taken from celery except tuples converted into lists
