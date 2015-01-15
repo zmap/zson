@@ -5,7 +5,7 @@ import json
 
 def zson_encode(obj, raw=False):
     def __inner_encode(obj):
-        if isinstance(obj, (str, int, float, bool, None.__class__)):
+        if isinstance(obj, (str, unicode, int, float, bool, None.__class__)):
             return obj
         elif isinstance(obj, datetime.datetime):
             out = {
