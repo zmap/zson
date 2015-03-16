@@ -3,41 +3,45 @@ import datetime
 from anyjson import loads, dumps
 import json
 
-def zson_encode(obj, raw=False):
-    def __inner_encode(obj):
-        if isinstance(obj, (str, unicode, int, float, bool, None.__class__)):
-            return obj
-        elif isinstance(obj, datetime.datetime):
-            out = {
-                "year":obj.year,
-                "month":obj.month,
-                "day":obj.day,
-                "hour":obj.hour,
-                "minute":obj.minute,
-                "second":obj.second,
-                "microsecond":obj.microsecond
-            }
-            if not raw:
-                out["__zson_class_name"] = "datetime"
-        elif isinstance(obj, (list, tuple, set)):
-            return list(map(lambda x: __inner_encode(x), obj))
-        elif isinstance(obj, dict):
-            return dict([(__inner_encode(k), __inner_encode(v)) for k,v in obj.items()])
-        elif hasattr(obj, "to_json"):
-            d = obj.to_json()
-            if d is None and raw:
-                return d
-            elif d is None:
-                d = dict()
-            if "__zson_class_name" in d:
-                 raise Exception("Object is not allowed to define __zson_class_name in to_json")
-            if not raw:
-                 d["__zson_class_name"] = obj.__class__.__name__
+def __inner_encode(obj, raw=False):
+    if isinstance(obj, (str, unicode, int, float, bool, None.__class__)):
+        return obj
+    elif isinstance(obj, datetime.datetime):
+        out = {
+            "year":obj.year,
+            "month":obj.month,
+            "day":obj.day,
+            "hour":obj.hour,
+            "minute":obj.minute,
+            "second":obj.second,
+            "microsecond":obj.microsecond
+        }
+        if not raw:
+            out["__zson_class_name"] = "datetime"
+    elif isinstance(obj, (list, tuple, set)):
+        return list(map(lambda x: __inner_encode(x), obj))
+    elif isinstance(obj, dict):
+        return dict([(__inner_encode(k), __inner_encode(v)) for k,v in obj.items()])
+    elif hasattr(obj, "to_json"):
+        d = obj.to_json()
+        if d is None and raw:
             return d
-        else:
-            raise Exception("unable to encode object %s to json" % repr(obj))
+        elif d is None:
+            d = dict()
+        if "__zson_class_name" in d:
+             raise Exception("Object is not allowed to define __zson_class_name in to_json")
+        if not raw:
+             d["__zson_class_name"] = obj.__class__.__name__
+        return d
+    else:
+        raise Exception("unable to encode object %s to json" % repr(obj))
 
-    return dumps(__inner_encode(obj))
+
+def zson_encode(obj, raw=False):
+    return dumps(__inner_encode(obj, raw))
+
+def dict_encode(obj):
+    return __inner_encode(obj, True)
    
 def zson_decode(str_):
     def __inner_decode(temp):
@@ -90,8 +94,6 @@ def zson_decode(str_):
 
 
 zson_registration_args = (zson_encode, zson_decode, 'application/zson', 'utf-8')
-
-
 
 class ZsonTestCase(unittest.TestCase):
     def testString(self):
