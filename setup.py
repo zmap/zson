@@ -2,8 +2,9 @@ from setuptools import setup
 
 setup(
     name = "zson",
-    description = "A JSON serializer for Kombu (and therefore also Celery) that supports encoding objects by defining to_json and from_json methods.",
-    version = "1.0.17",
+    description = "A JSON serializer for Kombu (and therefore also Celery) that "
+                  "supports encoding objects by defining to_json and from_json methods.",
+    version = "1.0.18",
     license = "Apache License, Version 2.0",
     author = "Zakir Durumeric",
     author_email = "zakird@gmail.com",
@@ -17,7 +18,7 @@ setup(
     ],
 
     entry_points={
-	'kombu.serializers': [
+        'kombu.serializers': [
             'zson = zson:zson_registration_args'
         ]
     },
